@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎲 跑团骰子生成器 - TRPG Dice Roller</title>
+    <style>
+        :root {
+            --bg: #1a1a24;
+            --panel-bg: #222231;
+            --panel-bg-alt: #28283b;
+            --border: #3a3a52;
+            --text: #e0dcd0;
+            --text-dim: #a09e94;
+            --text-bright: #f5f0e6;
+            --gold: #d4a745;
+            --gold-bright: #f0c860;
+            --gold-dark: #8b6919;
+            --accent: #c7924b;
+            --accent-glow: rgba(212, 167, 69, 0.3);
+            --red: #e05555;
+            --red-glow: rgba(224, 85, 85, 0.35);
+            --green: #5cb878;
+            --green-glow: rgba(92, 184, 120, 0.3);
+            --blue: #5b8cc9;
+            --button-bg: #2e2e42;
+            --button-hover: #3d3d58;
+            --button-active: #4a4a68;
+            --input-bg: #1c1c2a;
+            --input-border: #4a4a60;
+            --input-focus: #c7924b;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
+            --radius: 10px;
+            --radius-sm: 6px;
+            --radius-lg: 16px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --font-mono: 'SF Mono', 'Cascadia Code', 'Consolas', 'Monaco', 'Courier New', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif;
+            background: var(--bg);
+            background-image:
+                radial-gradient(ellipse at 50% 20%, rgba(180, 140, 80, 0.06) 0%, transparent 70%),
+                radial-gradient(ellipse at 80% 80%, rgba(140, 100, 60, 0.04) 0%, transparent 60%),
+                radial-gradient(ellipse at 20% 60%, rgba(100, 80, 120, 0.03) 0%, transparent 50%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            line-height: 1.5;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 700px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-top: 10px;
+        }
+
+        /* ===== Header ===== */
+        .header {
+            text-align: center;
+            padding: 10px 0 4px;
+        }
+        .header .logo {
+            font-size: 2.6em;
+            display: block;
+            animation: float 3s ease-in-out infinite;
+            filter: drop-shadow(0 4px 12px rgba(200, 160, 80, 0.4));
+        }
+        @keyframes float {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-8px);
+            }
+        }
+        .header h1 {
+            font-size: 1.5em;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            color: var(--gold-bright);
+            text-shadow: 0 0 30px var(--accent-glow);
+            margin: 2px 0;
+        }
+        .header .subtitle {
+            font-size: 0.85em;
+            color: var(--text-dim);
+            letter-spacing: 0.03em;
+        }
+
+        /* ===== Main Panel ===== */
+        .main-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 24px 22px 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            position: relative;
+            overflow: hidden;
+        }
+        .main-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-dark), var(--gold), var(--gold-dark), transparent);
+            opacity: 0.5;
+            border-radius: 50%;
+        }
+
+        /* Input Row */
+        .input-row {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 70px;
+        }
+        .input-group label {
+            font-size: 0.78em;
+            font-weight: 600;
+            color: var(--text-dim);
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            text-align: center;
+        }
+        .input-group input {
+            width: 80px;
+            padding: 10px 8px;
+            text-align: center;
+            font-size: 1.15em;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            background: var(--input-bg);
+            border: 2px solid var(--input-border);
+            border-radius: var(--radius-sm);
+            color: var(--text-bright);
+            transition: var(--transition);
+            letter-spacing: 0.03em;
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        .input-group input::-webkit-outer-spin-button,
+        .input-group input::-webkit-inner-spin-button {
+            opacity: 0.6;
+            height: 30px;
+        }
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--input-focus);
+            box-shadow: 0 0 16px var(--accent-glow);
+            background: #1f1f30;
+        }
+        .input-group input:hover {
+            border-color: #6a6a82;
+        }
+        .separator {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: var(--gold);
+            align-self: center;
+            padding-bottom: 6px;
+        }
+
+        /* Roll Button */
+        .roll-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 14px 32px;
+            font-size: 1.2em;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            background: linear-gradient(135deg, #c7924b 0%, #d4a745 30%, #b88135 70%, #9e6d28 100%);
+            color: #1a1a1a;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(180, 130, 60, 0.35), 0 2px 4px rgba(0, 0, 0, 0.3);
+            transition: all var(--transition);
+            position: relative;
+            overflow: hidden;
+            white-space: nowrap;
+            min-width: 140px;
+            align-self: center;
+        }
+        .roll-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 28px rgba(200, 150, 70, 0.5), 0 4px 8px rgba(0, 0, 0, 0.35);
+            background: linear-gradient(135deg, #d4a745 0%, #e2b84e 30%, #c7924b 70%, #a87830 100%);
+        }
+        .roll-btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 3px 10px rgba(180, 130, 60, 0.3);
+            transition: all 0.08s;
+        }
+        .roll-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            filter: grayscale(30%);
+        }
+        .roll-btn .btn-icon {
+            font-size: 1.4em;
+            display: inline-block;
+        }
+        .roll-btn.rolling .btn-icon {
+            animation: diceShake 0.15s ease-in-out infinite;
+        }
+        @keyframes diceShake {
+            0%,
+            100% {
+                transform: rotate(0deg) scale(1);
+            }
+            25% {
+                transform: rotate(-15deg) scale(1.15);
+            }
+            50% {
+                transform: rotate(10deg) scale(0.9);
+            }
+            75% {
+                transform: rotate(-5deg) scale(1.1);
+            }
+        }
+
+        /* Quick Dice Buttons */
+        .quick-dice-section {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center;
+        }
+        .quick-dice-label {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+        .quick-dice-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+        .quick-dice-btn {
+            padding: 8px 16px;
+            font-size: 0.9em;
+            font-weight: 600;
+            font-family: var(--font-mono);
+            letter-spacing: 0.04em;
+            background: var(--button-bg);
+            color: var(--text-bright);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            box-shadow: var(--shadow-sm);
+        }
+        .quick-dice-btn:hover {
+            background: var(--button-hover);
+            border-color: var(--gold-dark);
+            color: var(--gold-bright);
+            box-shadow: 0 0 14px var(--accent-glow);
+            transform: translateY(-1px);
+        }
+        .quick-dice-btn:active {
+            background: var(--button-active);
+            transform: scale(0.94);
+            transition: all 0.06s;
+        }
+        .quick-dice-btn.highlight-d20 {
+            border-color: #8b6919;
+            background: #2a2a1e;
+            color: #f0c860;
+            font-weight: 700;
+        }
+        .quick-dice-btn.highlight-d20:hover {
+            border-color: #c7924b;
+            box-shadow: 0 0 20px rgba(240, 200, 96, 0.4);
+        }
+
+        /* ===== Result Display ===== */
+        .result-area {
+            background: var(--panel-bg-alt);
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px 18px;
+            text-align: center;
+            min-height: 90px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all var(--transition);
+            position: relative;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25);
+        }
+        .result-area.flash {
+            border-color: var(--gold);
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25), 0 0 30px var(--accent-glow);
+            animation: resultFlash 0.5s ease-out;
+        }
+        @keyframes resultFlash {
+            0% {
+                box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25), 0 0 50px var(--accent-glow), 0 0 100px rgba(240, 200, 96, 0.5);
+            }
+            100% {
+                box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.25), 0 0 30px var(--accent-glow);
+            }
+        }
+        .result-expression {
+            font-size: 1.3em;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            color: var(--text-bright);
+            letter-spacing: 0.04em;
+            word-break: break-all;
+        }
+        .result-detail {
+            font-size: 1em;
+            color: var(--text-dim);
+            font-family: var(--font-mono);
+            letter-spacing: 0.03em;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            justify-content: center;
+            align-items: center;
+        }
+        .result-sum {
+            font-size: 2.6em;
+            font-weight: 900;
+            font-family: var(--font-mono);
+            color: var(--gold-bright);
+            text-shadow: 0 0 24px var(--accent-glow);
+            letter-spacing: 0.03em;
+            line-height: 1;
+            transition: all 0.3s;
+        }
+        .result-sum.crit-max {
+            color: #ffd700;
+            text-shadow: 0 0 36px rgba(255, 215, 0, 0.7), 0 0 60px rgba(255, 180, 0, 0.4);
+            animation: critPulse 0.8s ease-in-out 3;
+        }
+        .result-sum.crit-min {
+            color: var(--red);
+            text-shadow: 0 0 24px var(--red-glow);
+            animation: critMinShake 0.4s ease-in-out 2;
+        }
+        @keyframes critPulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.12);
+            }
+        }
+        @keyframes critMinShake {
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-4px);
+            }
+            75% {
+                transform: translateX(4px);
+            }
+        }
+        .die-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            font-size: 1em;
+            background: #2a2a3a;
+            border: 1px solid #4a4a5e;
+            color: var(--text-bright);
+            transition: all 0.25s;
+        }
+        .die-chip.die-max {
+            background: #3d2f0a;
+            border-color: #b88135;
+            color: #ffd700;
+            box-shadow: 0 0 10px rgba(200, 150, 50, 0.4);
+        }
+        .die-chip.die-min {
+            background: #2f0a0a;
+            border-color: #8b3a3a;
+            color: #ff6b6b;
+            box-shadow: 0 0 10px rgba(200, 60, 60, 0.35);
+        }
+        .modifier-tag {
+            font-size: 0.9em;
+            color: #a0c0e0;
+            font-weight: 600;
+        }
+
+        .result-placeholder {
+            color: var(--text-dim);
+            font-size: 1em;
+            opacity: 0.6;
+            font-style: italic;
+        }
+
+        /* ===== History Panel ===== */
+        .history-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 18px 16px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .history-header h2 {
+            font-size: 1.1em;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+            color: var(--text-bright);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .history-header h2 .icon {
+            font-size: 1.3em;
+        }
+        .history-count {
+            font-size: 0.8em;
+            font-weight: 400;
+            color: var(--text-dim);
+            background: var(--button-bg);
+            padding: 3px 10px;
+            border-radius: 12px;
+        }
+        .btn-clear {
+            padding: 7px 16px;
+            font-size: 0.82em;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            background: transparent;
+            color: var(--red);
+            border: 1px solid #5a3030;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .btn-clear:hover {
+            background: #2a1515;
+            border-color: #8b3a3a;
+            box-shadow: 0 0 12px var(--red-glow);
+        }
+        .btn-clear:active {
+            transform: scale(0.94);
+        }
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 420px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #3a3a52 transparent;
+            padding-right: 4px;
+        }
+        .history-list::-webkit-scrollbar {
+            width: 5px;
+        }
+        .history-list::-webkit-scrollbar-track {
+            background: transparent;
+            border-radius: 10px;
+        }
+        .history-list::-webkit-scrollbar-thumb {
+            background: #3a3a52;
+            border-radius: 10px;
+        }
+        .history-list::-webkit-scrollbar-thumb:hover {
+            background: #4a4a62;
+        }
+        .history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            padding: 10px 14px;
+            background: var(--panel-bg-alt);
+            border: 1px solid transparent;
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+            cursor: default;
+            flex-wrap: wrap;
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .history-item:hover {
+            border-color: #4a4a62;
+            background: #2c2c40;
+        }
+        .history-item .hist-expression {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            font-size: 0.95em;
+            color: var(--text-bright);
+            letter-spacing: 0.03em;
+            flex-shrink: 0;
+        }
+        .history-item .hist-detail {
+            font-family: var(--font-mono);
+            font-size: 0.8em;
+            color: var(--text-dim);
+            flex: 1;
+            min-width: 80px;
+            text-align: left;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .history-item .hist-sum {
+            font-family: var(--font-mono);
+            font-weight: 700;
+            font-size: 1.1em;
+            color: var(--gold-bright);
+            flex-shrink: 0;
+            min-width: 30px;
+            text-align: right;
+        }
+        .history-item .hist-time {
+            font-size: 0.7em;
+            color: #6a6a7e;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .history-item .btn-reroll {
+            padding: 4px 10px;
+            font-size: 0.7em;
+            font-weight: 600;
+            background: var(--button-bg);
+            color: var(--text-dim);
+            border: 1px solid #3a3a52;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .history-item .btn-reroll:hover {
+            background: var(--button-hover);
+            color: var(--gold-bright);
+            border-color: var(--gold-dark);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+        .history-empty {
+            text-align: center;
+            color: var(--text-dim);
+            padding: 20px;
+            font-style: italic;
+            opacity: 0.6;
+            font-size: 0.9em;
+        }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #2e2e42;
+            color: var(--text-bright);
+            padding: 10px 22px;
+            border-radius: 25px;
+            font-size: 0.85em;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            border: 1px solid #5a5a72;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast.success {
+            border-color: var(--green);
+            color: var(--green);
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 500px) {
+            .app-container {
+                gap: 14px;
+            }
+            .header h1 {
+                font-size: 1.25em;
+            }
+            .header .logo {
+                font-size: 2em;
+            }
+            .main-panel {
+                padding: 16px 12px 14px;
+                gap: 12px;
+            }
+            .input-row {
+                gap: 8px;
+            }
+            .input-group input {
+                width: 60px;
+                padding: 8px 4px;
+                font-size: 1em;
+            }
+            .roll-btn {
+                padding: 12px 24px;
+                font-size: 1em;
+                min-width: 110px;
+            }
+            .result-sum {
+                font-size: 2em;
+            }
+            .result-expression {
+                font-size: 1.05em;
+            }
+            .die-chip {
+                width: 30px;
+                height: 30px;
+                font-size: 0.85em;
+                border-radius: 6px;
+            }
+            .quick-dice-btn {
+                padding: 6px 12px;
+                font-size: 0.78em;
+            }
+            .history-item {
+                padding: 8px 10px;
+                gap: 6px;
+            }
+            .history-item .hist-expression {
+                font-size: 0.82em;
+            }
+            .history-item .hist-detail {
+                font-size: 0.7em;
+                min-width: 50px;
+            }
+            .history-item .hist-sum {
+                font-size: 0.95em;
+            }
+            .history-item .hist-time {
+                font-size: 0.65em;
+            }
+            .history-item .btn-reroll {
+                font-size: 0.65em;
+                padding: 3px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <span class="logo" aria-hidden="true">🎲</span>
+            <h1>跑团骰子生成器</h1>
+            <p class="subtitle">TRPG Dice Roller · 独立随机 · 可追溯</p>
+        </div>
+
+        <!-- Main Panel -->
+        <div class="main-panel" id="mainPanel">
+            <!-- Custom Input -->
+            <div class="input-row">
+                <div class="input-group">
+                    <label for="diceCount">骰子数量</label>
+                    <input type="number" id="diceCount" value="2" min="1" max="100" step="1" aria-label="骰子数量">
+                </div>
+                <span class="separator">d</span>
+                <div class="input-group">
+                    <label for="diceSides">骰子面数</label>
+                    <input type="number" id="diceSides" value="6" min="2" max="1000" step="1" aria-label="骰子面数">
+                </div>
+                <span class="separator" style="opacity:0.5;">+</span>
+                <div class="input-group">
+                    <label for="modifier">加值</label>
+                    <input type="number" id="modifier" value="0" min="-999" max="999" step="1" aria-label="加值修正">
+                </div>
+            </div>
+
+            <!-- Roll Button -->
+            <button class="roll-btn" id="rollBtn" aria-label="掷骰">
+                <span class="btn-icon">🎯</span> 掷骰
+            </button>
+
+            <!-- Quick Dice Buttons -->
+            <div class="quick-dice-section">
+                <span class="quick-dice-label">⚡ 快捷骰子</span>
+                <div class="quick-dice-row" id="quickDiceRow">
+                    <button class="quick-dice-btn" data-count="1" data-sides="4">1d4</button>
+                    <button class="quick-dice-btn" data-count="1" data-sides="6">1d6</button>
+                    <button class="quick-dice-btn" data-count="1" data-sides="8">1d8</button>
+                    <button class="quick-dice-btn" data-count="1" data-sides="10">1d10</button>
+                    <button class="quick-dice-btn" data-count="1" data-sides="12">1d12</button>
+                    <button class="quick-dice-btn highlight-d20" data-count="1" data-sides="20">1d20</button>
+                    <button class="quick-dice-btn" data-count="1" data-sides="100">1d100</button>
+                    <button class="quick-dice-btn" data-count="2" data-sides="6">2d6</button>
+                    <button class="quick-dice-btn" data-count="3" data-sides="6">3d6</button>
+                    <button class="quick-dice-btn" data-count="4" data-sides="6">4d6</button>
+                </div>
+            </div>
+
+            <!-- Result Display -->
+            <div class="result-area" id="resultArea">
+                <span class="result-placeholder" id="resultPlaceholder">👆 输入参数后点击「掷骰」或选择快捷骰子</span>
+                <div class="result-expression" id="resultExpression" style="display:none;"></div>
+                <div class="result-detail" id="resultDetail" style="display:none;"></div>
+                <div class="result-sum" id="resultSum" style="display:none;"></div>
+            </div>
+        </div>
+
+        <!-- History Panel -->
+        <div class="history-panel" id="historyPanel">
+            <div class="history-header">
+                <h2><span class="icon">📜</span> 历史记录 <span class="history-count" id="historyCount">0</span></h2>
+                <button class="btn-clear" id="btnClear" aria-label="清除历史记录">🗑 清除全部</button>
+            </div>
+            <div class="history-list" id="historyList">
+                <div class="history-empty" id="historyEmpty">暂无记录，开始掷骰吧！</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        (function() {
+            // ============ DOM Elements ============
+            const diceCountInput = document.getElementById('diceCount');
+            const diceSidesInput = document.getElementById('diceSides');
+            const modifierInput = document.getElementById('modifier');
+            const rollBtn = document.getElementById('rollBtn');
+            const resultArea = document.getElementById('resultArea');
+            const resultPlaceholder = document.getElementById('resultPlaceholder');
+            const resultExpression = document.getElementById('resultExpression');
+            const resultDetail = document.getElementById('resultDetail');
+            const resultSum = document.getElementById('resultSum');
+            const historyList = document.getElementById('historyList');
+            const historyEmpty = document.getElementById('historyEmpty');
+            const historyCount = document.getElementById('historyCount');
+            const btnClear = document.getElementById('btnClear');
+            const toast = document.getElementById('toast');
+            const quickDiceRow = document.getElementById('quickDiceRow');
+
+            // ============ State ============
+            const MAX_HISTORY = 100;
+            const STORAGE_KEY = 'diceRollerHistory_v2';
+            let isRolling = false;
+            let rollAnimationTimer = null;
+            let historyData = [];
+
+            // ============ Random Number Generation ============
+            /**
+             * Generate a cryptographically secure random integer in [min, max].
+             * Uses crypto.getRandomValues with rejection sampling to avoid modulo bias.
+             * Falls back to Math.random if crypto is unavailable.
+             */
+            function secureRandomInt(min, max) {
+                if (min > max) [min, max] = [max, min];
+                const range = max - min + 1;
+
+                // Try crypto.getRandomValues
+                if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+                    const maxUint32 = 0xFFFFFFFF;
+                    const limit = maxUint32 - (maxUint32 % range);
+                    let value;
+                    const buf = new Uint32Array(1);
+                    let attempts = 0;
+                    do {
+                        crypto.getRandomValues(buf);
+                        value = buf[0];
+                        attempts++;
+                        // Safety: break after 1000 attempts (astronomically unlikely)
+                        if (attempts > 1000) break;
+                    } while (value >= limit);
+                    return min + (value % range);
+                }
+
+                // Fallback: Math.random (good enough for most TRPG use)
+                return min + Math.floor(Math.random() * range);
+            }
+
+            /**
+             * Roll multiple dice independently.
+             * Each die roll uses a separate call to secureRandomInt,
+             * ensuring independent random values.
+             */
+            function rollDice(count, sides) {
+                const results = [];
+                for (let i = 0; i < count; i++) {
+                    results.push(secureRandomInt(1, sides));
+                }
+                return results;
+            }
+
+            // ============ History Management ============
+            function loadHistory() {
+                try {
+                    const stored = localStorage.getItem(STORAGE_KEY);
+                    if (stored) {
+                        historyData = JSON.parse(stored);
+                        if (!Array.isArray(historyData)) historyData = [];
+                        // Validate and clean
+                        historyData = historyData.filter(item =>
+                            item && typeof item.count === 'number' &&
+                            typeof item.sides === 'number' &&
+                            Array.isArray(item.results) &&
+                            typeof item.sum === 'number' &&
+                            item.count >= 1 && item.sides >= 2
+                        );
+                        // Limit size
+                        if (historyData.length > MAX_HISTORY) {
+                            historyData = historyData.slice(0, MAX_HISTORY);
+                        }
+                    }
+                } catch (e) {
+                    historyData = [];
+                }
+                renderHistory();
+            }
+
+            function saveHistory() {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(historyData));
+                } catch (e) {
+                    // Storage full or unavailable — silently ignore
+                    if (historyData.length > 50) {
+                        historyData = historyData.slice(0, 50);
+                        try {
+                            localStorage.setItem(STORAGE_KEY, JSON.stringify(historyData));
+                        } catch (e2) { /* give up */ }
+                    }
+                }
+            }
+
+            function addHistoryRecord(count, sides, modifier, results, totalSum) {
+                const record = {
+                    timestamp: new Date().toISOString(),
+                    count: count,
+                    sides: sides,
+                    modifier: modifier,
+                    results: [...results],
+                    sum: totalSum,
+                };
+                historyData.unshift(record);
+                if (historyData.length > MAX_HISTORY) {
+                    historyData.pop();
+                }
+                saveHistory();
+                renderHistory();
+            }
+
+            function clearHistory() {
+                if (historyData.length === 0) return;
+                historyData = [];
+                saveHistory();
+                renderHistory();
+                showToast('历史记录已清除', 'success');
+            }
+
+            function renderHistory() {
+                historyList.innerHTML = '';
+                if (historyData.length === 0) {
+                    historyList.appendChild(historyEmpty);
+                    historyEmpty.style.display = '';
+                    historyCount.textContent = '0';
+                } else {
+                    historyEmpty.style.display = 'none';
+                    historyCount.textContent = historyData.length;
+                    historyData.forEach((record, index) => {
+                        const item = document.createElement('div');
+                        item.className = 'history-item';
+                        item.style.animationDelay = `${index * 0.02}s`;
+
+                        const exprText = record.modifier !== 0 ?
+                            `${record.count}d${record.sides}${record.modifier >= 0 ? '+' : ''}${record.modifier}` :
+                            `${record.count}d${record.sides}`;
+
+                        const detailText = record.results.join(' + ') +
+                            (record.modifier !== 0 ? ` ${record.modifier >= 0 ? '+' : ''}${record.modifier}` :
+                                '');
+
+                        const timeStr = formatTime(record.timestamp);
+
+                        item.innerHTML = `
+                            <span class="hist-expression">${escapeHTML(exprText)}</span>
+                            <span class="hist-detail" title="${escapeHTML(detailText)}">= ${escapeHTML(detailText)}</span>
+                            <span class="hist-sum">= ${record.sum}</span>
+                            <span class="hist-time">${escapeHTML(timeStr)}</span>
+                            <button class="btn-reroll" data-count="${record.count}" data-sides="${record.sides}" data-modifier="${record.modifier}" aria-label="重新投掷">🔄 重投</button>
+                        `;
+                        historyList.appendChild(item);
+                    });
+
+                    // Attach reroll event listeners
+                    historyList.querySelectorAll('.btn-reroll').forEach(btn => {
+                        btn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const count = parseInt(this.dataset.count);
+                            const sides = parseInt(this.dataset.sides);
+                            const modifier = parseInt(this.dataset.modifier);
+                            diceCountInput.value = count;
+                            diceSidesInput.value = sides;
+                            modifierInput.value = modifier;
+                            performRoll(count, sides, modifier);
+                            // Scroll to result
+                            resultArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        });
+                    });
+                }
+            }
+
+            function formatTime(isoString) {
+                try {
+                    const date = new Date(isoString);
+                    const now = new Date();
+                    const diffMs = now - date;
+                    const diffSec = Math.floor(diffMs / 1000);
+                    const diffMin = Math.floor(diffSec / 60);
+                    const diffHour = Math.floor(diffMin / 60);
+                    const diffDay = Math.floor(diffHour / 24);
+
+                    if (diffSec < 10) return '刚刚';
+                    if (diffSec < 60) return `${diffSec}秒前`;
+                    if (diffMin < 60) return `${diffMin}分钟前`;
+                    if (diffHour < 24) return `${diffHour}小时前`;
+                    if (diffDay < 7) return `${diffDay}天前`;
+
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const hours = String(date.getHours()).padStart(2, '0');
+                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                    return `${month}-${day} ${hours}:${minutes}`;
+                } catch (e) {
+                    return '';
+                }
+            }
+
+            function escapeHTML(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // ============ Result Display ============
+            function displayResult(count, sides, modifier, results, totalSum) {
+                // Hide placeholder
+                resultPlaceholder.style.display = 'none';
+
+                // Expression
+                const exprText = modifier !== 0 ?
+                    `${count}d${sides}${modifier >= 0 ? '+' : ''}${modifier}` :
+                    `${count}d${sides}`;
+                resultExpression.textContent = exprText;
+                resultExpression.style.display = '';
+
+                // Detail: individual dice chips
+                resultDetail.innerHTML = '';
+                results.forEach((val, i) => {
+                    if (i > 0) {
+                        const plusSpan = document.createElement('span');
+                        plusSpan.textContent = '+';
+                        plusSpan.style.color = '#6a6a7e';
+                        plusSpan.style.fontWeight = '600';
+                        plusSpan.style.margin = '0 2px';
+                        resultDetail.appendChild(plusSpan);
+                    }
+                    const chip = document.createElement('span');
+                    chip.className = 'die-chip';
+                    chip.textContent = val;
+                    if (val === sides) {
+                        chip.classList.add('die-max');
+                    } else if (val === 1) {
+                        chip.classList.add('die-min');
+                    }
+                    resultDetail.appendChild(chip);
+                });
+                if (modifier !== 0) {
+                    const modSign = modifier >= 0 ? '+' : '';
+                    const modSpan = document.createElement('span');
+                    modSpan.className = 'modifier-tag';
+                    modSpan.textContent = ` ${modSign}${modifier}`;
+                    modSpan.style.marginLeft = '4px';
+                    resultDetail.appendChild(modSpan);
+                }
+                resultDetail.style.display = '';
+
+                // Sum
+                resultSum.textContent = `= ${totalSum}`;
+                resultSum.style.display = '';
+                resultSum.classList.remove('crit-max', 'crit-min');
+
+                // Check for criticals
+                const allMax = results.every(v => v === sides) && results.length > 0;
+                const allMin = results.every(v => v === 1) && results.length > 0;
+                const isD20Nat20 = (count === 1 && sides === 20 && results[0] === 20);
+                const isD20Nat1 = (count === 1 && sides === 20 && results[0] === 1);
+
+                if (allMax || isD20Nat20) {
+                    resultSum.classList.add('crit-max');
+                } else if (allMin || isD20Nat1) {
+                    resultSum.classList.add('crit-min');
+                }
+
+                // Flash result area
+                resultArea.classList.remove('flash');
+                void resultArea.offsetWidth;
+                resultArea.classList.add('flash');
+            }
+
+            function showPlaceholder() {
+                resultPlaceholder.style.display = '';
+                resultExpression.style.display = 'none';
+                resultDetail.style.display = 'none';
+                resultSum.style.display = 'none';
+                resultSum.classList.remove('crit-max', 'crit-min');
+                resultArea.classList.remove('flash');
+            }
+
+            // ============ Roll Animation ============
+            function animateRoll(count, sides, modifier, finalResults, totalSum, callback) {
+                const animDuration = 650; // ms
+                const frameInterval = 40; // ms per frame
+                const totalFrames = Math.floor(animDuration / frameInterval);
+                let frame = 0;
+
+                // Show placeholder structure during animation
+                resultPlaceholder.style.display = 'none';
+                const exprText = modifier !== 0 ?
+                    `${count}d${sides}${modifier >= 0 ? '+' : ''}${modifier}` :
+                    `${count}d${sides}`;
+                resultExpression.textContent = exprText;
+                resultExpression.style.display = '';
+                resultDetail.style.display = '';
+                resultSum.style.display = '';
+                resultSum.classList.remove('crit-max', 'crit-min');
+
+                function updateFrame() {
+                    frame++;
+                    if (frame >= totalFrames) {
+                        // Animation complete — show real results
+                        displayResult(count, sides, modifier, finalResults, totalSum);
+                        if (callback) callback();
+                        return;
+                    }
+
+                    // Generate random intermediate values for animation
+                    const animResults = [];
+                    for (let i = 0; i < count; i++) {
+                        animResults.push(secureRandomInt(1, sides));
+                    }
+                    const animSum = animResults.reduce((a, b) => a + b, 0) + modifier;
+
+                    // Update detail with animated chips
+                    resultDetail.innerHTML = '';
+                    animResults.forEach((val, i) => {
+                        if (i > 0) {
+                            const plusSpan = document.createElement('span');
+                            plusSpan.textContent = '+';
+                            plusSpan.style.color = '#6a6a7e';
+                            plusSpan.style.fontWeight = '600';
+                            plusSpan.style.margin = '0 2px';
+                            resultDetail.appendChild(plusSpan);
+                        }
+                        const chip = document.createElement('span');
+                        chip.className = 'die-chip';
+                        chip.textContent = val;
+                        chip.style.opacity = '0.7';
+                        chip.style.transition = 'all 0.03s';
+                        resultDetail.appendChild(chip);
+                    });
+                    if (modifier !== 0) {
+                        const modSign = modifier >= 0 ? '+' : '';
+                        const modSpan = document.createElement('span');
+                        modSpan.className = 'modifier-tag';
+                        modSpan.textContent = ` ${modSign}${modifier}`;
+                        modSpan.style.marginLeft = '4px';
+                        resultDetail.appendChild(modSpan);
+                    }
+
+                    resultSum.textContent = `= ${animSum}`;
+                    resultSum.style.opacity = '0.75';
+
+                    rollAnimationTimer = setTimeout(updateFrame, frameInterval);
+                }
+
+                rollAnimationTimer = setTimeout(updateFrame, frameInterval);
+            }
+
+            function cancelAnimation() {
+                if (rollAnimationTimer) {
+                    clearTimeout(rollAnimationTimer);
+                    rollAnimationTimer = null;
+                }
+            }
+
+            // ============ Core Roll Logic ============
+            function performRoll(count, sides, modifier) {
+                if (isRolling) return;
+                if (count < 1 || sides < 2) {
+                    showToast('⚠️ 骰子数量需≥1，面数需≥2', '');
+                    return;
+                }
+                if (count > 100) {
+                    showToast('⚠️ 骰子数量不能超过100', '');
+                    return;
+                }
+                if (sides > 1000) {
+                    showToast('⚠️ 骰子面数不能超过1000', '');
+                    return;
+                }
+
+                isRolling = true;
+                rollBtn.disabled = true;
+                rollBtn.classList.add('rolling');
+                cancelAnimation();
+
+                // Generate all dice results independently
+                const results = rollDice(count, sides);
+                const rawSum = results.reduce((a, b) => a + b, 0);
+                const totalSum = rawSum + modifier;
+
+                // Animate and display
+                animateRoll(count, sides, modifier, results, totalSum, () => {
+                    isRolling = false;
+                    rollBtn.disabled = false;
+                    rollBtn.classList.remove('rolling');
+                    rollAnimationTimer = null;
+                });
+
+                // Add to history
+                addHistoryRecord(count, sides, modifier, results, totalSum);
+
+                // Update input fields to reflect what was just rolled
+                diceCountInput.value = count;
+                diceSidesInput.value = sides;
+                modifierInput.value = modifier;
+            }
+
+            // ============ Event Handlers ============
+            rollBtn.addEventListener('click', () => {
+                const count = parseInt(diceCountInput.value) || 2;
+                const sides = parseInt(diceSidesInput.value) || 6;
+                const modifier = parseInt(modifierInput.value) || 0;
+                performRoll(count, sides, modifier);
+            });
+
+            // Enter key on inputs triggers roll
+            [diceCountInput, diceSidesInput, modifierInput].forEach(input => {
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const count = parseInt(diceCountInput.value) || 2;
+                        const sides = parseInt(diceSidesInput.value) || 6;
+                        const modifier = parseInt(modifierInput.value) || 0;
+                        performRoll(count, sides, modifier);
+                    }
+                });
+            });
+
+            // Quick dice buttons
+            quickDiceRow.addEventListener('click', (e) => {
+                const btn = e.target.closest('.quick-dice-btn');
+                if (!btn) return;
+                const count = parseInt(btn.dataset.count);
+                const sides = parseInt(btn.dataset.sides);
+                if (isNaN(count) || isNaN(sides)) return;
+                // Quick buttons always use modifier 0
+                performRoll(count, sides, 0);
+            });
+
+            // Clear history button
+            btnClear.addEventListener('click', () => {
+                if (historyData.length === 0) {
+                    showToast('历史记录已为空', '');
+                    return;
+                }
+                if (confirm('确定要清除所有历史记录吗？此操作不可撤销。')) {
+                    clearHistory();
+                }
+            });
+
+            // ============ Toast ============
+            let toastTimer = null;
+
+            function showToast(message, type) {
+                if (toastTimer) clearTimeout(toastTimer);
+                toast.textContent = message;
+                toast.className = 'toast ' + (type || '');
+                void toast.offsetWidth;
+                toast.classList.add('show');
+                toastTimer = setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 2000);
+            }
+
+            // ============ Keyboard Shortcuts ============
+            document.addEventListener('keydown', (e) => {
+                // Ctrl+Enter or Cmd+Enter to roll from anywhere
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    const count = parseInt(diceCountInput.value) || 2;
+                    const sides = parseInt(diceSidesInput.value) || 6;
+                    const modifier = parseInt(modifierInput.value) || 0;
+                    performRoll(count, sides, modifier);
+                    resultArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+                // 'R' key (when not in input) to roll
+                if (e.key === 'r' && !e.ctrlKey && !e.metaKey && !e.altKey &&
+                    document.activeElement === document.body) {
+                    e.preventDefault();
+                    const count = parseInt(diceCountInput.value) || 2;
+                    const sides = parseInt(diceSidesInput.value) || 6;
+                    const modifier = parseInt(modifierInput.value) || 0;
+                    performRoll(count, sides, modifier);
+                    resultArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+
+            // ============ Initialize ============
+            function init() {
+                loadHistory();
+                // Set focus on dice count input for quick access
+                diceCountInput.focus();
+                diceCountInput.select();
+
+                // Log info about random source
+                if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+                    console.log('🎲 骰子生成器已就绪 | 随机源: crypto.getRandomValues (密码学安全)');
+                } else {
+                    console.log('🎲 骰子生成器已就绪 | 随机源: Math.random (标准伪随机)');
+                }
+                console.log('💡 提示: 按 Enter 掷骰 | 按 R 键快速掷骰 | Ctrl+Enter 全局掷骰');
+                console.log('📜 历史记录已加载，共 ' + historyData.length + ' 条');
+            }
+
+            init();
+        })();
+    </script>
+</body>
+</html>
